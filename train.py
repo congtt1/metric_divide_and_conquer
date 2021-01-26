@@ -74,6 +74,7 @@ def evaluate(model, dataloaders, logging, backend='faiss', config = None):
         )
     return score
 
+#abcaaaaaaaaaaa
 
 def train_batch(model, criterion, opt, config, batch, dset, epoch):
     # print(batch)

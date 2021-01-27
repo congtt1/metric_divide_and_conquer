@@ -33,7 +33,7 @@ def pairwise_distance(a, squared=False):
     Returns:
     pairwise_distances: 2-D Tensor of size [number of data, number of data].
     """
-    a = torch.as_tensor(np.atleast_2d(a))
+    a = torch.as_tensor(np.atleast_2d(a.cpu()))
     pairwise_distances_squared = torch.add(
         a.pow(2).sum(dim=1, keepdim=True).expand(a.size(0), -1),
         torch.t(a).pow(2).sum(dim=0, keepdim=True).expand(a.size(0), -1)
@@ -68,7 +68,8 @@ def pairwise_distance(a, squared=False):
         *pairwise_distances.size(),
         device=pairwise_distances.device
     )
-    pairwise_distances = torch.mul(pairwise_distances, mask_offdiagonals).data.cpu().numpy()
+    pairwise_distances = torch.mul(pairwise_distances, mask_offdiagonals).data
+    # pairwise_distances = torch.mul(pairwise_distances, mask_offdiagonals).data.cpu().numpy()
 
     return pairwise_distances
 

@@ -23,7 +23,7 @@ class InShop(torch.utils.data.Dataset):
         # ) as f:
         with open('Eval/list_eval_partition.txt','r') as f:
             lines = f.readlines()
-        lines = lines[:30000]
+        # lines = lines[:30000]
         self.transform = transform
 
         # store for using later '__getitem__'
@@ -110,10 +110,10 @@ class InShop(torch.utils.data.Dataset):
         return self.ys[index]
 
     def set_subset(self, I):
-        self.ys = [self.ys[i] for i in I]
-        self.I = [self.I[i] for i in I]
+        self.ys = [self.ys[int(i)] for i in I]
+        self.I = [self.I[int(i)] for i in I]
         self.im_paths = [
-            self.im_paths[i] for i in I]
+            self.im_paths[int(i)] for i in I]
 
 # if __name__ == '__main__':
 #     train_dataset = InShop(root='',classes=None, dset_type='train', transform=None)

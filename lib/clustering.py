@@ -22,6 +22,10 @@ def get_cluster_labels(model, data_loader, use_penultimate, nb_clusters,
             use_penultimate=use_penultimate,
             is_dry_run=is_dry_run
         )
+        X_all = np.array(X_all.data.cpu())
+
+        # T_all = np.array(T_all.data.cpu())
+        # I_all = np.array(I_all.data.cpu())
         perm = np.argsort(I_all)
         X_all = X_all[perm]
         I_all = I_all[perm]
@@ -61,15 +65,6 @@ def make_clustered_dataloaders(model, dataloader_init, config,
         nb_clusters = config['nb_clusters'],
         backend=config['backend']
     )
-    # print('C', C)
-    # print(len(C))
-
-    # print('T', T)
-    # print(len(T))
-
-    # print('I', I)
-    # print(len(I))
-    # print('bbbbbbbbbbbbbb')
     if reassign == True:
         # get correct indices for samples by sorting them and return arg sort
         I_correct = correct_indices(I)

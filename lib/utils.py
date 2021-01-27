@@ -14,7 +14,9 @@ def predict_batchwise(model, dataloader, use_penultimate, is_dry_run=False):
     model_is_training = model.training
     model.eval()
     ds = dataloader.dataset
-    A = [[] for i in range(len(ds[0]))]
+    # A = [[] for i in range(len(ds[0]))]
+    A = [torch.Tensor() for i in range(len(ds[0]))]
+
     with torch.no_grad():
 
         # use tqdm when the dataset is large (SOProducts)
@@ -35,49 +37,59 @@ def predict_batchwise(model, dataloader, use_penultimate, is_dry_run=False):
                         # move images to device of model (approximate device)
                         J = J.to(list(model.parameters())[0].device)
                         # predict model output for image
-                        J = model(J, use_penultimate).data.cpu().numpy()
+                        J = model(J, use_penultimate).data
+                        # J = model(J, use_penultimate).data.cpu().numpy()
                         # take only subset of resulting embedding w.r.t dataset
                     else:
                         # print('bbbbbbbbbbbbbbb')
                         # just a placeholder not to break existing code
                         J = np.array([-1])
-                for j in J:
-                    A[i].append(np.asarray(j))
-        result = [np.stack(A[i]) for i in range(len(A))]
-    # print(result)
+                    A[i] = A[i].cuda()
+                    A[i] = torch.cat((A[i], J), 0)
+                else:
+                    A[i] = torch.cat((A[i], J),0)
+        #         for j in J:
+        #             A[i].append(np.asarray(j))
+        # result = [np.stack(A[i]) for i in range(len(A))]
+
     model.train()
     model.train(model_is_training) # revert to previous training state
     if is_dry_run:
         # do not return features if is_dry_run
-        return [None, *result[1:]]
+        # return [None, *result[1:]]
+        return [None, *A[1:]]
     else:
-        return result
+        # return result
+        return A
 
 
 def evaluate_in_shop(model, dl_query, dl_gallery, use_penultimate, backend,
-        K = [1, 10, 20, 30,50], with_nmi = False):
+        K = [1], with_nmi = False):
 
     # calculate embeddings with model and get targets
-    # print('dl_query',len(dl_query.dataset))
-    # print('dl_gallery',len(dl_gallery.dataset))
-
     X_query, T_query, _ = predict_batchwise(
         model, dl_query, use_penultimate)
     X_gallery, T_gallery, _ = predict_batchwise(
         model, dl_gallery, use_penultimate)
+
+
     
     nb_classes = dl_query.dataset.nb_classes()
-    assert nb_classes == len(set(T_query))
+    # assert nb_classes == len(set(T_query))
 
     # calculate full similarity matrix, choose only first `len(X_query)` rows
     # and only last columns corresponding to the column
-    T_eval = torch.cat(
-        [torch.from_numpy(T_query), torch.from_numpy(T_gallery)])
-    X_eval = torch.cat(
-        [torch.from_numpy(X_query), torch.from_numpy(X_gallery)])
-    D = similarity.pairwise_distance(X_eval)[:len(X_query), len(X_query):]
+    # T_eval = torch.cat(
+    #     [torch.from_numpy(T_query), torch.from_numpy(T_gallery)])
+    # X_eval = torch.cat(
+    #     [torch.from_numpy(X_query), torch.from_numpy(X_gallery)])
+    # print(T_query.shape)
+    T_eval = torch.cat((T_query, T_gallery),0)
+    X_eval = torch.cat((X_query, X_gallery),0)
+    D = similarity.pairwise_distance(X_eval)[:X_query.shape[0], X_query.shape[0]:]
+    # D = similarity.pairwise_distance(X_eval)[:len(X_query), len(X_query):]
 
-    D = torch.from_numpy(D)
+    # D = torch.from_numpy(D)
     # get top k labels with smallest (`largest = False`) distance
     Y = T_gallery[D.topk(k = max(K), dim = 1, largest = False)[1]]
 
